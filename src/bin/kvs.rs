@@ -1,28 +1,27 @@
-use kvs::KvsOpt;
 use kvs::Command;
+use kvs::KvsOpt;
 use structopt::StructOpt;
-
 
 fn main() {
     let opt = KvsOpt::from_args();
     match opt.cmd {
-        Command::Get{key} => {
+        Command::Get { key } => {
             println!("Get Key:{}", key);
             eprintln!("unimplemented");
             std::process::exit(1);
-        },
-        Command::Set{key, value} => {
+        }
+        Command::Set { key, value } => {
             println!("Set Key:{} Value:{}", key, value);
             eprintln!("unimplemented");
             std::process::exit(1);
-        },
-        Command::Remove{key} => {
+        }
+        Command::Remove { key } => {
             println!("Remove Key:{}", key);
             eprintln!("unimplemented");
             std::process::exit(1);
         }
     }
-    
+
     // let matches = App::new(env!("CARGO_PKG_NAME"))
     //     .version(env!("CARGO_PKG_VERSION"))
     //     .author(env!("CARGO_PKG_AUTHORS"))

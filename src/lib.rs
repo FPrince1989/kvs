@@ -4,6 +4,6 @@
 mod cli;
 mod kv;
 
-pub use kv::KvStore;
-pub use cli::KvsOpt;
 pub use cli::Command;
+pub use cli::KvsOpt;
+pub use kv::KvStore;
