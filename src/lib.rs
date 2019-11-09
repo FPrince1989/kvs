@@ -1,42 +1,9 @@
 #![deny(missing_docs)]
 //! A key-value store
 
-use std::collections::HashMap;
+mod cli;
+mod kv;
 
-/// A key-value store
-#[derive(Default)]
-pub struct KvStore {
-    map: HashMap<String, String>,
-}
-
-impl KvStore {
-    /// init
-    pub fn new() -> KvStore {
-        KvStore {
-            map: HashMap::new(),
-        }
-    }
-
-    /// set key and value
-    pub fn set(&mut self, key: String, value: String) {
-        self.map.insert(key, value);
-    }
-
-    /// get value by key
-    pub fn get(&mut self, key: String) -> Option<String> {
-        self.map.get(&key).cloned()
-    }
-
-    /// remove by key
-    pub fn remove(&mut self, key: String) {
-        self.map.remove(&key);
-    }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     #[test]
-//     fn it_works() {
-//         assert_eq!(2 + 2, 4);
-//     }
-// }
+pub use kv::KvStore;
+pub use cli::KvsOpt;
+pub use cli::Command;
