@@ -45,15 +45,8 @@ impl KvStore {
     pub fn open(path: &Path) -> Result<KvStore> {
         let mut path = path.to_path_buf();
         path.push("kvs.log");
-        let writer = BufWriter::new(OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&path)?
-        );
-        let mut reader = BufReader::new(OpenOptions::new()
-            .read(true)
-            .open(&path)?
-        );
+        let writer = BufWriter::new(OpenOptions::new().create(true).append(true).open(&path)?);
+        let mut reader = BufReader::new(OpenOptions::new().read(true).open(&path)?);
         let mut map = HashMap::new();
         let mut cmd_str = String::new();
         while let Ok(_) = reader.read_line(&mut cmd_str) {

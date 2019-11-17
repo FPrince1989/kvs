@@ -1,8 +1,8 @@
 use structopt::StructOpt;
 
-use kvs::{Command, KvStore, KvsError};
 use kvs::KvsOpt;
 use kvs::Result;
+use kvs::{Command, KvStore, KvsError};
 use std::process::exit;
 
 fn main() -> Result<()> {
@@ -25,16 +25,12 @@ fn main() -> Result<()> {
         Command::Remove { key } => {
             let mut kvs = KvStore::open(std::env::current_dir()?.as_path())?;
             match kvs.remove(key) {
-                Ok(()) => {
-                    Ok(())
-                },
+                Ok(()) => Ok(()),
                 Err(KvsError::KeyNotFound) => {
                     println!("Key not found");
                     exit(1);
-                },
-                Err(e) => {
-                    Err(e)
                 }
+                Err(e) => Err(e),
             }
         }
     }
