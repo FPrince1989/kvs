@@ -1,24 +1,41 @@
-use kvs::Command;
-use kvs::KvsOpt;
 use structopt::StructOpt;
 
-fn main() {
+use kvs::{Command, KvStore, KvsError};
+use kvs::KvsOpt;
+use kvs::Result;
+use std::process::exit;
+
+fn main() -> Result<()> {
     let opt = KvsOpt::from_args();
     match opt.cmd {
         Command::Get { key } => {
-            println!("Get Key:{}", key);
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            let mut kvs = KvStore::open(std::env::current_dir()?.as_path())?;
+            if let Some(value) = kvs.get(key)? {
+                println!("{}", value);
+            } else {
+                println!("Key not found");
+            }
+            Ok(())
         }
         Command::Set { key, value } => {
-            println!("Set Key:{} Value:{}", key, value);
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            let mut kvs = KvStore::open(std::env::current_dir()?.as_path())?;
+            kvs.set(key, value)?;
+            Ok(())
         }
         Command::Remove { key } => {
-            println!("Remove Key:{}", key);
-            eprintln!("unimplemented");
-            std::process::exit(1);
+            let mut kvs = KvStore::open(std::env::current_dir()?.as_path())?;
+            match kvs.remove(key) {
+                Ok(()) => {
+                    Ok(())
+                },
+                Err(KvsError::KeyNotFound) => {
+                    println!("Key not found");
+                    exit(1);
+                },
+                Err(e) => {
+                    Err(e)
+                }
+            }
         }
     }
 

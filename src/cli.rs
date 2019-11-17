@@ -1,16 +1,18 @@
+use serde::Deserialize;
+use serde::Serialize;
 use structopt::StructOpt;
 
 /// KvsOpt
 #[derive(Debug, StructOpt)]
 #[structopt(author, about)]
 pub struct KvsOpt {
-    /// subcommand
+    /// the sub command
     #[structopt(subcommand)]
     pub cmd: Command,
 }
 
-/// subcommand
-#[derive(Debug, StructOpt)]
+/// Cli SubCommand
+#[derive(Debug, StructOpt, Serialize, Deserialize)]
 pub enum Command {
     /// Get the string value of a given string key
     Get {
