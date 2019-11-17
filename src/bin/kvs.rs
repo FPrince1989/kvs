@@ -1,9 +1,8 @@
+use std::process::exit;
+
 use structopt::StructOpt;
 
-use kvs::KvsOpt;
-use kvs::Result;
-use kvs::{Command, KvStore, KvsError};
-use std::process::exit;
+use kvs::{Command, KvStore, KvsError, KvsOpt, Result};
 
 fn main() -> Result<()> {
     let opt = KvsOpt::from_args();
