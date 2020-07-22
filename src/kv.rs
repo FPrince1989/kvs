@@ -4,77 +4,33 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
-use crate::{Command, KvsError, Result};
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::{KvsEngine, KvsError, Result};
+
+const MAX_REDUNDANT_COUNT: u64 = 1000;
+
+#[derive(Debug, Serialize, Deserialize)]
+enum Command {
+    Set { key: String, value: String },
+    Remove { key: String },
+}
 
 /// A key-value store
 pub struct KvStore {
     pos_map: HashMap<String, u64>,
-    _path: PathBuf,
+    dir: PathBuf,
     reader: BufReader<File>,
     writer: BufWriter<File>,
     write_pos: u64,
     redundant_count: u64,
 }
 
-const MAX_REDUNDANT_COUNT: u64 = 1000;
-
 impl KvStore {
-    /// set key and value
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {
-        if self
-            .pos_map
-            .insert(key.to_owned(), self.write_pos)
-            .is_some()
-        {
-            self.redundant_count += 1;
-        }
-        let cmd = Command::Set { key, value };
-        let mut cmd_str = serde_json::to_string(&cmd)?;
-        cmd_str.push('\n');
-        self.writer.write_all(cmd_str.as_bytes())?;
-        self.writer.flush()?;
-        self.write_pos += cmd_str.len() as u64;
-
-        if self.redundant_count > MAX_REDUNDANT_COUNT {
-            self.compact()?;
-        }
-
-        Ok(())
-    }
-
-    /// get value by key
-    pub fn get(&mut self, key: String) -> Result<Option<String>> {
-        let value_opt = self.pos_map.get(&key);
-        if let Some(&pos) = value_opt {
-            self.reader.seek(SeekFrom::Start(pos))?;
-            let mut cmd_str = String::new();
-            self.reader.read_line(&mut cmd_str)?;
-            let cmd = serde_json::from_str::<Command>(cmd_str.as_str())?;
-            match cmd {
-                Command::Set { value, .. } => Ok(Some(value)),
-                _ => Ok(None),
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// remove by key
-    pub fn remove(&mut self, key: String) -> Result<()> {
-        if self.pos_map.remove(&key).is_some() {
-            let cmd = Command::Remove { key };
-            serde_json::to_writer(&mut self.writer, &cmd)?;
-            self.writer.write_all(b"\n")?;
-            self.redundant_count += 1;
-            Ok(())
-        } else {
-            Err(KvsError::KeyNotFound)
-        }
-    }
-
     /// open and load the database file
-    pub fn open(path: &Path) -> Result<KvStore> {
-        let mut file_path = path.to_path_buf();
+    pub fn open(dir: &Path) -> Result<KvStore> {
+        let mut file_path = dir.to_path_buf();
         file_path.push("kvs.log");
         let writer = BufWriter::new(
             OpenOptions::new()
@@ -104,7 +60,6 @@ impl KvStore {
                         redundant_count += 1;
                     }
                 }
-                _ => unreachable!(),
             }
 
             last_index += cmd_str.len() as u64;
@@ -112,7 +67,7 @@ impl KvStore {
         }
         Ok(KvStore {
             pos_map: map,
-            _path: path.to_path_buf(),
+            dir: dir.to_path_buf(),
             reader,
             writer,
             write_pos: last_index,
@@ -121,9 +76,9 @@ impl KvStore {
     }
 
     fn compact(&mut self) -> Result<()> {
-        let mut compact_file_path = self._path.to_path_buf();
+        let mut compact_file_path = self.dir.to_path_buf();
         compact_file_path.push("kvs_compact.log");
-        let mut file_path = self._path.to_path_buf();
+        let mut file_path = self.dir.to_path_buf();
         file_path.push("kvs.log");
         let mut compact_writer = BufWriter::new(
             OpenOptions::new()
@@ -154,5 +109,60 @@ impl KvStore {
         fs::rename(compact_file_path, file_path)?;
 
         Ok(())
+    }
+}
+
+impl KvsEngine for KvStore {
+    /// set key and value
+    fn set(&mut self, key: String, value: String) -> Result<()> {
+        if self
+            .pos_map
+            .insert(key.to_owned(), self.write_pos)
+            .is_some()
+        {
+            self.redundant_count += 1;
+        }
+        let cmd = Command::Set { key, value };
+        let mut cmd_str = serde_json::to_string(&cmd)?;
+        cmd_str.push('\n');
+        self.writer.write_all(cmd_str.as_bytes())?;
+        self.writer.flush()?;
+        self.write_pos += cmd_str.len() as u64;
+
+        if self.redundant_count > MAX_REDUNDANT_COUNT {
+            self.compact()?;
+        }
+
+        Ok(())
+    }
+
+    /// get value by key
+    fn get(&mut self, key: String) -> Result<Option<String>> {
+        let value_opt = self.pos_map.get(&key);
+        if let Some(&pos) = value_opt {
+            self.reader.seek(SeekFrom::Start(pos))?;
+            let mut cmd_str = String::new();
+            self.reader.read_line(&mut cmd_str)?;
+            let cmd = serde_json::from_str::<Command>(cmd_str.as_str())?;
+            match cmd {
+                Command::Set { value, .. } => Ok(Some(value)),
+                _ => Ok(None),
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// remove by key
+    fn remove(&mut self, key: String) -> Result<()> {
+        if self.pos_map.remove(&key).is_some() {
+            let cmd = Command::Remove { key };
+            serde_json::to_writer(&mut self.writer, &cmd)?;
+            self.writer.write_all(b"\n")?;
+            self.redundant_count += 1;
+            Ok(())
+        } else {
+            Err(KvsError::KeyNotFound)
+        }
     }
 }
