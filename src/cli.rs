@@ -1,10 +1,13 @@
 use std::net::SocketAddr;
 
+use clap::arg_enum;
 use structopt::StructOpt;
+
+const DEFAULT_ADDR: &str = "127.0.0.1:4100";
 
 /// KvsClientOpt
 #[derive(Debug, StructOpt)]
-#[structopt(name="kvs-client", author, about="A key-value store client")]
+#[structopt(name = "kvs-client", author, about = "A key-value store client")]
 pub struct KvsClientOpt {
     /// the sub command
     #[structopt(subcommand)]
@@ -22,10 +25,10 @@ pub enum ClientCommand {
 
         /// the remote address
         #[structopt(
-            long,
-            name = "IP-PORT",
-            default_value = "127.0.0.1:4000",
-            parse(try_from_str)
+        long,
+        name = "IP-PORT",
+        default_value = DEFAULT_ADDR,
+        parse(try_from_str)
         )]
         addr: SocketAddr,
     },
@@ -41,10 +44,10 @@ pub enum ClientCommand {
 
         /// the remote address
         #[structopt(
-            long,
-            name = "IP-PORT",
-            default_value = "127.0.0.1:4000",
-            parse(try_from_str)
+        long,
+        name = "IP-PORT",
+        default_value = DEFAULT_ADDR,
+        parse(try_from_str)
         )]
         addr: SocketAddr,
     },
@@ -57,10 +60,10 @@ pub enum ClientCommand {
 
         /// the remote address
         #[structopt(
-            long,
-            name = "IP-PORT",
-            default_value = "127.0.0.1:4000",
-            parse(try_from_str)
+        long,
+        name = "IP-PORT",
+        default_value = DEFAULT_ADDR,
+        parse(try_from_str)
         )]
         addr: SocketAddr,
     },
@@ -68,18 +71,26 @@ pub enum ClientCommand {
 
 /// KvsServerOpt
 #[derive(Debug, StructOpt)]
-#[structopt(name="kvs-server", author, about="A key-value store server")]
+#[structopt(name = "kvs-server", author, about = "A key-value store server")]
 pub struct KvsServerOpt {
     /// listening address
     #[structopt(
-        long,
-        name = "IP-PORT",
-        default_value = "127.0.0.1:4000",
-        parse(try_from_str)
+    long,
+    name = "IP-PORT",
+    default_value = DEFAULT_ADDR,
+    parse(try_from_str)
     )]
     pub addr: SocketAddr,
 
     /// the storage engine
-    #[structopt(long, name = "ENGINE-NAME", default_value = "kvs")]
-    pub engine: String,
+    #[structopt(long, name = "ENGINE-NAME", possible_values = &Engine::variants(), case_insensitive = true, default_value = "kvs")]
+    pub engine: Engine,
+}
+
+arg_enum! {
+    #[derive(Debug)]
+    pub enum Engine {
+        Kvs,
+        Sled,
+    }
 }

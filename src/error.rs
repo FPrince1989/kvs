@@ -12,6 +12,9 @@ pub enum KvsError {
     /// serde Error
     #[fail(display = "{}", _0)]
     SerdeErr(#[cause] serde_json::error::Error),
+    /// string Error
+    #[fail(display = "{}", _0)]
+    StringErr(String),
 }
 
 impl From<std::io::Error> for KvsError {

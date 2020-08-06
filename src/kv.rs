@@ -10,6 +10,8 @@ use serde::Serialize;
 use crate::{KvsEngine, KvsError, Result};
 
 const MAX_REDUNDANT_COUNT: u64 = 1000;
+const DATA_FILENAME: &str = "kvs.data";
+const COMPACT_FILENAME: &str = "kvs-compact.data";
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Command {
@@ -31,7 +33,7 @@ impl KvStore {
     /// open and load the database file
     pub fn open(dir: &Path) -> Result<KvStore> {
         let mut file_path = dir.to_path_buf();
-        file_path.push("kvs.log");
+        file_path.push(DATA_FILENAME);
         let writer = BufWriter::new(
             OpenOptions::new()
                 .create(true)
@@ -77,9 +79,9 @@ impl KvStore {
 
     fn compact(&mut self) -> Result<()> {
         let mut compact_file_path = self.dir.to_path_buf();
-        compact_file_path.push("kvs_compact.log");
+        compact_file_path.push(COMPACT_FILENAME);
         let mut file_path = self.dir.to_path_buf();
-        file_path.push("kvs.log");
+        file_path.push(DATA_FILENAME);
         let mut compact_writer = BufWriter::new(
             OpenOptions::new()
                 .create(true)
