@@ -1,6 +1,7 @@
 // #![deny(missing_docs)]
 //! A key-value store
 
+pub use crate::kvs::KvStore;
 pub use crate::sled::SledKvsEngine;
 pub use cli::ClientCommand;
 pub use cli::Engine;
@@ -9,7 +10,6 @@ pub use cli::KvsServerOpt;
 pub use client::KvsClient;
 pub use error::KvsError;
 pub use error::Result;
-pub use kvs::KvStore;
 pub use network::Request;
 pub use network::Response;
 pub use server::KvsServer;
@@ -33,6 +33,6 @@ pub trait KvsEngine {
     /// remove by key
     fn remove(&mut self, key: String) -> Result<()>;
 
-    /// get Engine's Name
+    /// get engine's Name
     fn name(&self) -> String;
 }

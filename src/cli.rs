@@ -88,7 +88,7 @@ pub struct KvsServerOpt {
 }
 
 arg_enum! {
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Eq)]
     pub enum Engine {
         Kvs,
         Sled,

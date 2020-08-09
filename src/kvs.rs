@@ -161,6 +161,7 @@ impl KvsEngine for KvStore {
             let cmd = Command::Remove { key };
             serde_json::to_writer(&mut self.writer, &cmd)?;
             self.writer.write_all(b"\n")?;
+            self.writer.flush()?;
             self.redundant_count += 1;
             Ok(())
         } else {
