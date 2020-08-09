@@ -167,4 +167,9 @@ impl KvsEngine for KvStore {
             Err(KvsError::KeyNotFound)
         }
     }
+
+    /// engine's name
+    fn name(&self) -> String {
+        "kvs".to_string()
+    }
 }

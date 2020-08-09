@@ -15,6 +15,7 @@ failure = "0.1.5"
 sloggers = "1.0.1"
 slog = "^2"
 clap = "^2"
+sled = "^0.34"
 
 [dev-dependencies]
 assert_cmd = "0.11"

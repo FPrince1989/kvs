@@ -25,7 +25,13 @@ impl<T: KvsEngine> KvsServer<T> {
 
     pub fn run(&mut self, addr: SocketAddr) -> Result<()> {
         let listener = TcpListener::bind(addr)?;
-        info!(self.logger, "Init Listener Success");
+        info!(
+            self.logger,
+            "Init Listener Success, Version:{}, Engine Name:{}, Listening On:{}",
+            env!("CARGO_PKG_VERSION"),
+            self.engine.name(),
+            addr
+        );
         for stream in listener.incoming() {
             match stream {
                 Ok(tcp_stream) => {

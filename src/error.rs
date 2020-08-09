@@ -1,4 +1,5 @@
 use failure::Fail;
+use std::string::FromUtf8Error;
 
 /// Kvs Error Enum
 #[derive(Fail, Debug)]
@@ -15,6 +16,12 @@ pub enum KvsError {
     /// string Error
     #[fail(display = "{}", _0)]
     StringErr(String),
+    /// Sled error
+    #[fail(display = "sled error: {}", _0)]
+    SledErr(#[cause] sled::Error),
+    /// String FromUtf8Error error
+    #[fail(display = "UTF-8 error: {}", _0)]
+    Utf8Err(#[cause] FromUtf8Error),
 }
 
 impl From<std::io::Error> for KvsError {
@@ -26,6 +33,18 @@ impl From<std::io::Error> for KvsError {
 impl From<serde_json::error::Error> for KvsError {
     fn from(err: serde_json::error::Error) -> Self {
         KvsError::SerdeErr(err)
+    }
+}
+
+impl From<sled::Error> for KvsError {
+    fn from(err: sled::Error) -> Self {
+        KvsError::SledErr(err)
+    }
+}
+
+impl From<FromUtf8Error> for KvsError {
+    fn from(err: FromUtf8Error) -> Self {
+        KvsError::Utf8Err(err)
     }
 }
 
