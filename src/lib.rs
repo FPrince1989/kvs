@@ -1,8 +1,6 @@
 // #![deny(missing_docs)]
 //! A key-value store
 
-pub use crate::kvs::KvStore;
-pub use crate::sled::SledKvsEngine;
 pub use cli::ClientCommand;
 pub use cli::Engine;
 pub use cli::KvsClientOpt;
@@ -14,6 +12,9 @@ pub use network::Request;
 pub use network::Response;
 pub use server::KvsServer;
 
+pub use crate::kvs::KvStore;
+pub use crate::sled::SledKvsEngine;
+
 mod cli;
 mod client;
 mod error;
@@ -21,6 +22,7 @@ mod kvs;
 mod network;
 mod server;
 mod sled;
+mod thread_pool;
 
 /// defines the storage interface
 pub trait KvsEngine {
