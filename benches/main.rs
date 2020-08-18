@@ -2,12 +2,12 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{thread_rng, Rng};
 use tempfile::TempDir;
 
-use kvs::{KvStore, KvsEngine};
+use kvs::{SharedKvStore, KvsEngine};
 
 fn bench_kvs_set(c: &mut Criterion) {
     let mut rng = thread_rng();
     let temp_dir = TempDir::new().unwrap();
-    let mut kvs = KvStore::open(temp_dir.path()).unwrap();
+    let mut kvs = SharedKvStore::open(temp_dir.path()).unwrap();
     // let mut kvs = KvStore::open(&current_dir().unwrap()).unwrap();
     c.bench_function("kvs_write", move |b| {
         b.iter(|| {

@@ -13,6 +13,7 @@ pub use network::Response;
 pub use server::KvsServer;
 
 pub use crate::kvs::KvStore;
+pub use crate::kvs::SharedKvStore;
 pub use crate::sled::SledKvsEngine;
 
 mod cli;
@@ -22,18 +23,18 @@ mod kvs;
 mod network;
 mod server;
 mod sled;
-mod thread_pool;
+pub mod thread_pool;
 
 /// defines the storage interface
-pub trait KvsEngine {
+pub trait KvsEngine: Clone + Send + 'static {
     /// set key and value
-    fn set(&mut self, key: String, value: String) -> Result<()>;
+    fn set(&self, key: String, value: String) -> Result<()>;
 
     /// get value by key
-    fn get(&mut self, key: String) -> Result<Option<String>>;
+    fn get(&self, key: String) -> Result<Option<String>>;
 
     /// remove by key
-    fn remove(&mut self, key: String) -> Result<()>;
+    fn remove(&self, key: String) -> Result<()>;
 
     /// get engine's Name
     fn name(&self) -> String;

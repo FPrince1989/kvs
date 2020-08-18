@@ -3,6 +3,7 @@ use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -19,8 +20,17 @@ enum Command {
     Remove { key: String },
 }
 
+#[derive(Clone)]
+pub struct KvStore(Arc<Mutex<SharedKvStore>>);
+
+impl KvStore {
+    pub fn new(store: SharedKvStore) -> Self {
+        KvStore(Arc::new(Mutex::new(store)))
+    }
+}
+
 /// A key-value store
-pub struct KvStore {
+pub struct SharedKvStore {
     pos_map: HashMap<String, u64>,
     dir: PathBuf,
     reader: BufReader<File>,
@@ -29,9 +39,9 @@ pub struct KvStore {
     redundant_count: u64,
 }
 
-impl KvStore {
+impl SharedKvStore {
     /// open and load the database file
-    pub fn open(dir: &Path) -> Result<KvStore> {
+    pub fn open(dir: &Path) -> Result<SharedKvStore> {
         let mut file_path = dir.to_path_buf();
         file_path.push(DATA_FILENAME);
         let writer = BufWriter::new(
@@ -67,7 +77,7 @@ impl KvStore {
             last_index += cmd_str.len() as u64;
             cmd_str.clear();
         }
-        Ok(KvStore {
+        Ok(SharedKvStore {
             pos_map: map,
             dir: dir.to_path_buf(),
             reader,
@@ -112,9 +122,7 @@ impl KvStore {
 
         Ok(())
     }
-}
 
-impl KvsEngine for KvStore {
     /// set key and value
     fn set(&mut self, key: String, value: String) -> Result<()> {
         if self
@@ -168,6 +176,21 @@ impl KvsEngine for KvStore {
             Err(KvsError::KeyNotFound)
         }
     }
+}
+
+impl KvsEngine for KvStore {
+    fn set(&self, key: String, value: String) -> Result<()> {
+        self.0.lock().unwrap().set(key, value)
+    }
+
+    fn get(&self, key: String) -> Result<Option<String>> {
+        self.0.lock().unwrap().get(key)
+    }
+
+    fn remove(&self, key: String) -> Result<()> {
+        self.0.lock().unwrap().remove(key)
+    }
+
 
     /// engine's name
     fn name(&self) -> String {

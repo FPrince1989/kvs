@@ -3,24 +3,26 @@ use std::net::{SocketAddr, TcpListener, TcpStream};
 
 use serde_json::Deserializer;
 use slog::{debug, error, info, Logger};
+use sloggers::Build;
 use sloggers::terminal::{Destination, TerminalLoggerBuilder};
 use sloggers::types::Severity;
-use sloggers::Build;
 
 use crate::{KvsEngine, Request, Response, Result};
+use crate::thread_pool::ThreadPool;
 
-pub struct KvsServer<T: KvsEngine> {
+pub struct KvsServer<T: KvsEngine, P: ThreadPool> {
     engine: T,
+    pool: P,
     logger: Logger,
 }
 
-impl<T: KvsEngine> KvsServer<T> {
-    pub fn new(engine: T) -> Self {
+impl<T: KvsEngine, P: ThreadPool> KvsServer<T, P> {
+    pub fn new(engine: T, pool: P) -> Self {
         let mut builder = TerminalLoggerBuilder::new();
         builder.level(Severity::Debug);
         builder.destination(Destination::Stderr);
         let logger = builder.build().unwrap();
-        KvsServer { engine, logger }
+        KvsServer { engine, pool, logger }
     }
 
     pub fn run(&mut self, addr: SocketAddr) -> Result<()> {
@@ -33,14 +35,18 @@ impl<T: KvsEngine> KvsServer<T> {
             addr
         );
         for stream in listener.incoming() {
-            match stream {
-                Ok(tcp_stream) => {
-                    self.handle_stream(tcp_stream)?;
-                }
-                Err(e) => {
-                    error!(self.logger, "Network Error: {}", e);
-                }
-            }
+            // self.pool.spawn(move ||
+            //     match stream {
+            //         Ok(tcp_stream) => {
+            //             if let Err(e) = self.handle_stream(tcp_stream) {
+            //                 error!(self.logger, "Error: {}", e);
+            //             }
+            //         }
+            //         Err(e) => {
+            //             error!(self.logger, "Network Error: {}", e);
+            //         }
+            //     }
+            // )
         }
 
         Ok(())

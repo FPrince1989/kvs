@@ -7,7 +7,7 @@ pub use self::naive::NaiveThreadPool;
 /// defines the thread pool interface
 pub trait ThreadPool {
     /// create a thread pool
-    fn new(threads: u32) -> Result<Self>;
+    fn new(threads: u32) -> Result<Self> where Self: Sized;
 
     ///spawn a function in the thread pool
     fn spawn<F>(&self, job: F) where F: FnOnce() + Send + 'static;

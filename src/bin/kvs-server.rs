@@ -1,11 +1,12 @@
+use std::{env, fs};
+use std::env::current_dir;
 use std::net::SocketAddr;
 use std::process::exit;
-use std::{env, fs};
 
 use structopt::StructOpt;
 
-use kvs::{Engine, KvStore, KvsEngine, KvsServer, KvsServerOpt, Result, SledKvsEngine};
-use std::env::current_dir;
+use kvs::{Engine, KvsEngine, KvsServer, KvsServerOpt, KvStore, Result, SharedKvStore, SledKvsEngine};
+use kvs::thread_pool::{NaiveThreadPool, ThreadPool};
 
 const ENGINE_FILE_NAME: &str = "engine.data";
 
@@ -18,7 +19,7 @@ fn main() -> Result<()> {
     }
     match opt.engine {
         Engine::Kvs => {
-            run_with_engine(KvStore::open(std::env::current_dir()?.as_path())?, opt.addr)
+            run_with_engine(KvStore::new(SharedKvStore::open(std::env::current_dir()?.as_path())?), opt.addr)
         }
 
         Engine::Sled => run_with_engine(
@@ -30,7 +31,8 @@ fn main() -> Result<()> {
 
 fn run_with_engine<T: KvsEngine>(engine: T, addr: SocketAddr) -> Result<()> {
     fs::write(current_dir()?.join(ENGINE_FILE_NAME), engine.name())?;
-    let mut server = KvsServer::new(engine);
+    let pool = NaiveThreadPool::new(0)?;
+    let mut server = KvsServer::new(engine, pool);
     match server.run(addr) {
         Ok(_) => Ok(()),
         Err(e) => {
