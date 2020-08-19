@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{thread_rng, Rng};
 use tempfile::TempDir;
 
-use kvs::{SharedKvStore, KvsEngine};
+use kvs::{KvsEngine, SharedKvStore};
 
 fn bench_kvs_set(c: &mut Criterion) {
     let mut rng = thread_rng();

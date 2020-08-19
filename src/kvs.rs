@@ -24,8 +24,9 @@ enum Command {
 pub struct KvStore(Arc<Mutex<SharedKvStore>>);
 
 impl KvStore {
-    pub fn new(store: SharedKvStore) -> Self {
-        KvStore(Arc::new(Mutex::new(store)))
+    pub fn open(dir: &Path) -> Result<Self> {
+        let store = SharedKvStore::open(dir)?;
+        Ok(KvStore(Arc::new(Mutex::new(store))))
     }
 }
 
@@ -190,7 +191,6 @@ impl KvsEngine for KvStore {
     fn remove(&self, key: String) -> Result<()> {
         self.0.lock().unwrap().remove(key)
     }
-
 
     /// engine's name
     fn name(&self) -> String {

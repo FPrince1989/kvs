@@ -1,12 +1,13 @@
-use std::{env, fs};
 use std::env::current_dir;
 use std::net::SocketAddr;
 use std::process::exit;
+use std::{env, fs};
 
+use slog::error;
 use structopt::StructOpt;
 
-use kvs::{Engine, KvsEngine, KvsServer, KvsServerOpt, KvStore, Result, SharedKvStore, SledKvsEngine};
 use kvs::thread_pool::{NaiveThreadPool, ThreadPool};
+use kvs::{Engine, KvStore, KvsEngine, KvsServer, KvsServerOpt, Result, SledKvsEngine, LOGGING};
 
 const ENGINE_FILE_NAME: &str = "engine.data";
 
@@ -14,12 +15,12 @@ fn main() -> Result<()> {
     let opt = KvsServerOpt::from_args();
     let current_engine = get_current_engine()?;
     if current_engine.is_some() && current_engine.unwrap() != opt.engine {
-        eprintln!("Wrong engine");
+        error!(LOGGING.logger, "Wrong engine");
         exit(1);
     }
     match opt.engine {
         Engine::Kvs => {
-            run_with_engine(KvStore::new(SharedKvStore::open(std::env::current_dir()?.as_path())?), opt.addr)
+            run_with_engine(KvStore::open(std::env::current_dir()?.as_path())?, opt.addr)
         }
 
         Engine::Sled => run_with_engine(
@@ -36,7 +37,7 @@ fn run_with_engine<T: KvsEngine>(engine: T, addr: SocketAddr) -> Result<()> {
     match server.run(addr) {
         Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("{}", e.to_string());
+            error!(LOGGING.logger, "{}", e.to_string());
             exit(1);
         }
     }
@@ -51,7 +52,7 @@ fn get_current_engine() -> Result<Option<Engine>> {
     match fs::read_to_string(engine_file)?.parse() {
         Ok(engine) => Ok(Some(engine)),
         Err(e) => {
-            eprintln!("Wrong Engine Type: {}", e);
+            error!(LOGGING.logger, "Wrong Engine Type: {}", e);
             Ok(None)
         }
     }

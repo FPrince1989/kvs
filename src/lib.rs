@@ -15,6 +15,10 @@ pub use server::KvsServer;
 pub use crate::kvs::KvStore;
 pub use crate::kvs::SharedKvStore;
 pub use crate::sled::SledKvsEngine;
+use once_cell::sync::Lazy;
+use sloggers::terminal::{Destination, TerminalLoggerBuilder};
+use sloggers::types::Severity;
+use sloggers::Build;
 
 mod cli;
 mod client;
@@ -39,3 +43,15 @@ pub trait KvsEngine: Clone + Send + 'static {
     /// get engine's Name
     fn name(&self) -> String;
 }
+
+#[derive(Debug)]
+pub struct Logging {
+    pub logger: slog::Logger,
+}
+pub static LOGGING: Lazy<Logging> = Lazy::new(|| {
+    let mut builder = TerminalLoggerBuilder::new();
+    builder.level(Severity::Debug);
+    builder.destination(Destination::Stderr);
+    let logger = builder.build().unwrap();
+    Logging { logger }
+});
