@@ -1,6 +1,11 @@
 // #![deny(missing_docs)]
 //! A key-value store
 
+use once_cell::sync::Lazy;
+use sloggers::terminal::{Destination, TerminalLoggerBuilder};
+use sloggers::types::Severity;
+use sloggers::Build;
+
 pub use cli::ClientCommand;
 pub use cli::Engine;
 pub use cli::KvsClientOpt;
@@ -15,10 +20,6 @@ pub use server::KvsServer;
 pub use crate::kvs::KvStore;
 pub use crate::kvs::SharedKvStore;
 pub use crate::sled::SledKvsEngine;
-use once_cell::sync::Lazy;
-use sloggers::terminal::{Destination, TerminalLoggerBuilder};
-use sloggers::types::Severity;
-use sloggers::Build;
 
 mod cli;
 mod client;
@@ -48,6 +49,7 @@ pub trait KvsEngine: Clone + Send + 'static {
 pub struct Logging {
     pub logger: slog::Logger,
 }
+
 pub static LOGGING: Lazy<Logging> = Lazy::new(|| {
     let mut builder = TerminalLoggerBuilder::new();
     builder.level(Severity::Debug);
