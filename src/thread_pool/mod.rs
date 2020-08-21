@@ -1,8 +1,12 @@
 pub use crate::Result;
 
 mod naive;
+mod rayon;
+mod shared_queue;
 
 pub use self::naive::NaiveThreadPool;
+pub use self::rayon::RayonThreadPool;
+pub use self::shared_queue::SharedQueueThreadPool;
 
 /// defines the thread pool interface
 pub trait ThreadPool {
