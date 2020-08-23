@@ -3,10 +3,10 @@ use std::net::SocketAddr;
 use std::process::exit;
 use std::{env, fs};
 
-use slog::error;
+use slog::{error, info};
 use structopt::StructOpt;
 
-use kvs::thread_pool::{NaiveThreadPool, ThreadPool};
+use kvs::thread_pool::{RayonThreadPool, ThreadPool};
 use kvs::{Engine, KvStore, KvsEngine, KvsServer, KvsServerOpt, Result, SledKvsEngine, LOGGING};
 
 const ENGINE_FILE_NAME: &str = "engine.data";
@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     let opt = KvsServerOpt::from_args();
     let current_engine = get_current_engine()?;
     if current_engine.is_some() && current_engine.unwrap() != opt.engine {
-        error!(LOGGING.logger, "Wrong engine");
+        error!(LOGGING.logger, "Wrong engine.");
         exit(1);
     }
     match opt.engine {
@@ -32,7 +32,9 @@ fn main() -> Result<()> {
 
 fn run_with_engine<T: KvsEngine>(engine: T, addr: SocketAddr) -> Result<()> {
     fs::write(current_dir()?.join(ENGINE_FILE_NAME), engine.name())?;
-    let pool = NaiveThreadPool::new(0)?;
+    let thread_num = num_cpus::get() as u32;
+    info!(LOGGING.logger, "The CPU number is : {}", thread_num);
+    let pool = RayonThreadPool::new(thread_num)?;
     let mut server = KvsServer::new(engine, pool);
     match server.run(addr) {
         Ok(_) => Ok(()),
@@ -52,7 +54,7 @@ fn get_current_engine() -> Result<Option<Engine>> {
     match fs::read_to_string(engine_file)?.parse() {
         Ok(engine) => Ok(Some(engine)),
         Err(e) => {
-            error!(LOGGING.logger, "Wrong Engine Type: {}", e);
+            error!(LOGGING.logger, "Wrong Engine Type: {}.", e);
             Ok(None)
         }
     }
