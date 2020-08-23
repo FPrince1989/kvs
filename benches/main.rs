@@ -1,24 +1,86 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use rand::{thread_rng, Rng};
+#[macro_use]
+extern crate criterion;
+
+use std::iter;
+
+use criterion::{BatchSize, Criterion, ParameterizedBenchmark};
+use rand::prelude::*;
 use tempfile::TempDir;
 
-use kvs::{KvsEngine, SharedKvStore};
+use kvs::{KvStore, KvsEngine, SledKvsEngine};
 
-fn bench_kvs_set(c: &mut Criterion) {
-    let mut rng = thread_rng();
-    let temp_dir = TempDir::new().unwrap();
-    let mut kvs = SharedKvStore::open(temp_dir.path()).unwrap();
-    // let mut kvs = KvStore::open(&current_dir().unwrap()).unwrap();
-    c.bench_function("kvs_write", move |b| {
-        b.iter(|| {
-            let key = rng.gen_range(1, 1_000_000);
-            let value = rng.gen_range(1, 1_000_000);
-            kvs.set(format!("key{}", key), format!("value{}", value))
-                .unwrap();
-        })
+fn set_bench(c: &mut Criterion) {
+    let bench = ParameterizedBenchmark::new(
+        "kvs",
+        |b, _| {
+            b.iter_batched(
+                || {
+                    let temp_dir = TempDir::new().unwrap();
+                    (KvStore::open(temp_dir.path()).unwrap(), temp_dir)
+                },
+                |(store, _temp_dir)| {
+                    for i in 1..(1 << 12) {
+                        store.set(format!("key{}", i), "value".to_string()).unwrap();
+                    }
+                },
+                BatchSize::SmallInput,
+            )
+        },
+        iter::once(()),
+    )
+    .with_function("sled", |b, _| {
+        b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                (SledKvsEngine::new(sled::open(&temp_dir).unwrap()), temp_dir)
+            },
+            |(db, _temp_dir)| {
+                for i in 1..(1 << 12) {
+                    db.set(format!("key{}", i), "value".to_string()).unwrap();
+                }
+            },
+            BatchSize::SmallInput,
+        )
     });
+    c.bench("set_bench", bench);
 }
 
-criterion_group!(benches, bench_kvs_set);
+fn get_bench(c: &mut Criterion) {
+    let bench = ParameterizedBenchmark::new(
+        "kvs",
+        |b, i| {
+            let temp_dir = TempDir::new().unwrap();
+            let store = KvStore::open(temp_dir.path()).unwrap();
+            for key_i in 1..(1 << i) {
+                store
+                    .set(format!("key{}", key_i), "value".to_string())
+                    .unwrap();
+            }
+            let mut rng = SmallRng::from_seed([0; 16]);
+            b.iter(|| {
+                store
+                    .get(format!("key{}", rng.gen_range(1, 1 << i)))
+                    .unwrap();
+            })
+        },
+        vec![8, 12, 16, 20],
+    )
+    .with_function("sled", |b, i| {
+        let temp_dir = TempDir::new().unwrap();
+        let db = SledKvsEngine::new(sled::open(&temp_dir).unwrap());
+        for key_i in 1..(1 << i) {
+            db.set(format!("key{}", key_i), "value".to_string())
+                .unwrap();
+        }
+        let mut rng = SmallRng::from_seed([0; 16]);
+        b.iter(|| {
+            db.get(format!("key{}", rng.gen_range(1, 1 << i))).unwrap();
+        })
+    });
+    c.bench("get_bench", bench);
+}
 
+criterion_group!(name = benches;
+ config = Criterion::default().significance_level(0.1).sample_size(10);
+ targets = get_bench);
 criterion_main!(benches);
